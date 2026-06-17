@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VaultGuard | Privileged Access Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0B2545; --surface:#0f2f5a; --surface2:#163566;
+  --teal:#0D9488; --teal-dim:#0a7a6f; --teal-glow:rgba(13,148,136,.15);
+  --amber:#D97706; --amber-dim:#b86005;
+  --red:#ef4444; --red-dim:rgba(239,68,68,.12);
+  --green:#22c55e; --green-dim:rgba(34,197,94,.12);
+  --purple:#8B5CF6; --purple-dim:rgba(139,92,246,.12);
+  --border:rgba(13,148,136,.16); --text:#e8eef6; --muted:#7a9bbf;
+  --font-d:'Playfair Display',serif; --font-b:'DM Sans',sans-serif; --font-m:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--navy);color:var(--text);font-family:var(--font-b);min-height:100vh;display:flex;}
+
+.sidebar{width:230px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.logo{padding:22px 18px 18px;border-bottom:1px solid var(--border);}
+.logo h1{font-family:var(--font-d);font-size:1.3rem;color:var(--teal);}
+.logo span{font-size:.65rem;color:var(--muted);font-family:var(--font-m);text-transform:uppercase;letter-spacing:.1em;}
+.nav{flex:1;padding:14px 0;}
+.nav-sec{padding:8px 16px 3px;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-family:var(--font-m);}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;color:var(--muted);
+  font-size:.84rem;font-weight:500;border-left:3px solid transparent;transition:all .15s;}
+.nav-item:hover{color:var(--text);background:var(--teal-glow);}
+.nav-item.active{color:var(--teal);background:var(--teal-glow);border-left-color:var(--teal);}
+.nav-item .ic{width:16px;text-align:center;font-size:.9rem;}
+.sidebar-foot{padding:14px 18px;border-top:1px solid var(--border);font-size:.68rem;color:var(--muted);font-family:var(--font-m);}
+
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 28px;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:.9rem;font-weight:600;}
+.live-pill{display:flex;align-items:center;gap:8px;background:rgba(239,68,68,.1);border:1px solid var(--red);
+  padding:4px 14px;border-radius:20px;font-size:.72rem;font-family:var(--font-m);color:var(--red);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.content{padding:28px;flex:1;}
+.panel{display:none;} .panel.active{display:block;}
+.ph{font-family:var(--font-d);font-size:1.45rem;margin-bottom:4px;}
+.ps{font-size:.82rem;color:var(--muted);margin-bottom:22px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:18px;}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.card-title{font-size:.9rem;font-weight:600;}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;}
+.stat .lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-m);margin-bottom:6px;}
+.stat .val{font-size:1.8rem;font-weight:700;font-family:var(--font-d);}
+.stat.t .val{color:var(--teal);} .stat.a .val{color:var(--amber);} .stat.r .val{color:var(--red);} .stat.g .val{color:var(--green);}
+
+.form-row{display:flex;gap:10px;flex-wrap:wrap;}
+.fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px;}
+.fg label{font-size:.68rem;color:var(--muted);font-family:var(--font-m);text-transform:uppercase;letter-spacing:.08em;}
+input,select,textarea{background:var(--navy);border:1px solid var(--border);border-radius:6px;color:var(--text);
+  padding:8px 11px;font-size:.84rem;font-family:var(--font-b);outline:none;transition:border-color .15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--teal);}
+select option{background:var(--navy);}
+
+.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:.84rem;font-weight:600;
+  font-family:var(--font-b);transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-teal{background:var(--teal);color:#fff;} .btn-teal:hover{background:var(--teal-dim);}
+.btn-amber{background:var(--amber);color:#fff;} .btn-amber:hover{background:var(--amber-dim);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);} .btn-ghost:hover{color:var(--text);border-color:var(--muted);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.3);} .btn-danger:hover{background:var(--red-dim);}
+.btn-sm{padding:4px 11px;font-size:.74rem;}
+
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.84rem;}
+th{text-align:left;padding:9px 13px;font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;
+  font-family:var(--font-m);border-bottom:1px solid var(--border);font-weight:500;}
+td{padding:11px 13px;border-bottom:1px solid rgba(13,148,136,.06);vertical-align:middle;}
+tr:last-child td{border-bottom:none;} tr:hover td{background:rgba(13,148,136,.04);}
+
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.67rem;font-family:var(--font-m);font-weight:500;}
+.b-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.b-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.b-amber{background:rgba(217,119,6,.12);color:var(--amber);border:1px solid rgba(217,119,6,.3);}
+.b-teal{background:var(--teal-glow);color:var(--teal);border:1px solid rgba(13,148,136,.3);}
+.b-purple{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(139,92,246,.3);}
+
+.vault-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.vault-card{background:var(--navy);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.vault-card.checked-out{border-color:var(--amber);}
+.vault-card .v-name{font-size:.88rem;font-weight:600;margin-bottom:3px;}
+.vault-card .v-sys{font-size:.72rem;color:var(--muted);font-family:var(--font-m);margin-bottom:10px;}
+.vault-card .v-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+
+.empty{text-align:center;padding:36px;color:var(--muted);font-size:.84rem;}
+
+#toast{position:fixed;bottom:22px;right:22px;background:var(--surface2);border:1px solid var(--teal);
+  color:var(--text);padding:11px 18px;border-radius:8px;font-size:.82rem;z-index:999;opacity:0;
+  transform:translateY(8px);transition:all .22s;pointer-events:none;}
+#toast.show{opacity:1;transform:translateY(0);}
+
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+.session-term{
+  background:#050d1a; border:1px solid var(--teal); border-radius:8px;
+  padding:16px; font-family:var(--font-m); font-size:.76rem; line-height:1.7;
+  max-height:280px; overflow-y:auto;
+}
+.session-term .cmd{color:var(--teal);}
+.session-term .out{color:var(--muted);}
+.session-term .risk{color:var(--red);font-weight:600;}
+.session-term .ts{color:var(--purple);}
+
+.timer-bar{height:6px;border-radius:4px;background:var(--surface2);overflow:hidden;margin-top:8px;}
+.timer-fill{height:100%;border-radius:4px;background:var(--amber);transition:width 1s linear;}
+
+.req-card{background:var(--navy);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:10px;}
+.req-card .r-name{font-size:.85rem;font-weight:600;margin-bottom:4px;}
+.req-card .r-detail{font-size:.72rem;color:var(--muted);font-family:var(--font-m);margin-bottom:10px;line-height:1.6;}
+.req-card .r-foot{display:flex;justify-content:space-between;align-items:center;}
+
+.risk-meter{display:flex;align-items:center;gap:8px;}
+.risk-bar{flex:1;height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;}
+.risk-fill{height:100%;border-radius:3px;}
+
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;} .stats{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo"><h1>VaultGuard</h1><span>Privileged Access Mgmt</span></div>
+  <nav class="nav">
+    <div class="nav-sec">Overview</div>
+    <div class="nav-item active" onclick="show('dashboard',this)"><span class="ic">⬡</span>Dashboard</div>
+    <div class="nav-sec">Vault</div>
+    <div class="nav-item" onclick="show('vault',this)"><span class="ic">🔒</span>Credential Vault</div>
+    <div class="nav-item" onclick="show('requests',this)"><span class="ic">📨</span>Access Requests</div>
+    <div class="nav-sec">Sessions</div>
+    <div class="nav-item" onclick="show('active',this)"><span class="ic">⚡</span>Active Sessions</div>
+    <div class="nav-item" onclick="show('replay',this)"><span class="ic">▶</span>Session Replay</div>
+    <div class="nav-sec">Compliance</div>
+    <div class="nav-item" onclick="show('audit',this)"><span class="ic">📋</span>Audit Trail</div>
+  </nav>
+  <div class="sidebar-foot">v1.0 · mmohamud.me<br>IAM Portfolio Project</div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="live-pill"><div class="live-dot"></div><span id="live-count">0 Active Sessions</span></div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="ph">Privileged Access Overview</div>
+      <div class="ps">Vaulted credentials, just-in-time access, and full session accountability.</div>
+
+      <div class="stats">
+        <div class="stat t"><div class="lbl">Vaulted Accounts</div><div class="val" id="s-vault">0</div></div>
+        <div class="stat a"><div class="lbl">Checked Out</div><div class="val" id="s-checkedout">0</div></div>
+        <div class="stat g"><div class="lbl">Pending Requests</div><div class="val" id="s-pending">0</div></div>
+        <div class="stat r"><div class="lbl">High-Risk Sessions</div><div class="val" id="s-highrisk">0</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Active Privileged Sessions</div></div>
+          <div id="dash-active"><div class="empty">No active sessions.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><div class="card-title">Recent Audit Events</div></div>
+          <div id="dash-audit"><div class="empty">No events yet.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VAULT -->
+    <div class="panel" id="panel-vault">
+      <div class="ph">Credential Vault</div>
+      <div class="ps">Privileged accounts stored securely. No standing access — credentials are checked out, never owned.</div>
+
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Add Privileged Account</div></div>
+        <div class="form-row">
+          <div class="fg"><label>Account Name</label><input id="v-name" placeholder="prod-db-admin"/></div>
+          <div class="fg"><label>System</label><input id="v-system" placeholder="PostgreSQL Production"/></div>
+          <div class="fg"><label>Tier</label>
+            <select id="v-tier">
+              <option value="domain-admin">Domain Admin</option>
+              <option value="db-admin">Database Admin</option>
+              <option value="root">Root / Superuser</option>
+              <option value="service">Service Account</option>
+              <option value="network">Network Admin</option>
+            </select>
+          </div>
+          <div class="fg" style="justify-content:flex-end;min-width:auto;">
+            <label>&nbsp;</label>
+            <button class="btn btn-teal" onclick="addVaultAccount()">＋ Add to Vault</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Vault</div></div>
+        <div class="vault-grid" id="vault-grid"><div class="empty">No accounts vaulted.</div></div>
+      </div>
+    </div>
+
+    <!-- REQUESTS -->
+    <div class="panel" id="panel-requests">
+      <div class="ph">Just-In-Time Access Requests</div>
+      <div class="ps">Request time-bound privileged access. Nothing is granted without approval and an expiration.</div>
+
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Request Access</div></div>
+        <div class="form-row">
+          <div class="fg"><label>Requestor</label><input id="r-requestor" placeholder="Alice Chen"/></div>
+          <div class="fg"><label>Account</label><select id="r-account"></select></div>
+          <div class="fg"><label>Justification</label><input id="r-reason" placeholder="Investigating prod DB latency issue"/></div>
+          <div class="fg"><label>Duration</label>
+            <select id="r-duration">
+              <option value="15">15 minutes</option>
+              <option value="30" selected>30 minutes</option>
+              <option value="60">1 hour</option>
+              <option value="240">4 hours</option>
+            </select>
+          </div>
+          <div class="fg" style="justify-content:flex-end;min-width:auto;">
+            <label>&nbsp;</label>
+            <button class="btn btn-teal" onclick="addRequest()">＋ Submit Request</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Pending Requests</div></div>
+        <div id="requests-list"><div class="empty">No pending requests.</div></div>
+      </div>
+    </div>
+
+    <!-- ACTIVE SESSIONS -->
+    <div class="panel" id="panel-active">
+      <div class="ph">Active Privileged Sessions</div>
+      <div class="ps">Live sessions are time-bound and can be terminated instantly.</div>
+
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Account</th><th>System</th><th>Time Remaining</th><th>Risk</th><th>Actions</th></tr></thead>
+            <tbody id="active-body"><tr><td colspan="6" class="empty">No active sessions.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSION REPLAY -->
+    <div class="panel" id="panel-replay">
+      <div class="ph">Session Replay</div>
+      <div class="ps">Every privileged session is recorded command-by-command for full accountability.</div>
+
+      <div class="card">
+        <div class="form-row" style="margin-bottom:16px;">
+          <div class="fg"><label>Select Session</label><select id="replay-select" onchange="renderReplay()"></select></div>
+        </div>
+        <div class="session-term" id="replay-output">
+          <span style="color:var(--muted)">Select a session above to view its recorded command log.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div class="panel" id="panel-audit">
+      <div class="ph">Audit Trail</div>
+      <div class="ps">Immutable log of every vault, request, and session event.</div>
+
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">All Events</div>
+          <button class="btn btn-ghost btn-sm" onclick="clearAudit()">Clear Log</button>
+        </div>
+        <div id="audit-list"><div class="empty">No events.</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function save(){localStorage.setItem('pam_state',JSON.stringify(S));}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+function log(type,msg){S.audit.unshift({id:uid(),type,msg,time:new Date().toISOString()});if(S.audit.length>200)S.audit.pop();save();}
+
+const SAMPLE_COMMANDS = {
+  'db-admin': [
+    {cmd:'psql -U admin -d production', risk:false},
+    {cmd:"SELECT * FROM users WHERE last_login < now() - interval '90 days';", risk:false},
+    {cmd:'\\dt', risk:false},
+    {cmd:"UPDATE accounts SET status = 'locked' WHERE id = 4471;", risk:true},
+    {cmd:'\\q', risk:false}
+  ],
+  'root': [
+    {cmd:'sudo -i', risk:true},
+    {cmd:'systemctl restart nginx', risk:false},
+    {cmd:'cat /etc/shadow', risk:true},
+    {cmd:'tail -f /var/log/auth.log', risk:false},
+    {cmd:'exit', risk:false}
+  ],
+  'domain-admin': [
+    {cmd:'Get-ADUser -Filter *', risk:false},
+    {cmd:'Set-ADAccountPassword -Identity jdoe -Reset', risk:true},
+    {cmd:'Get-ADGroupMember -Identity "Domain Admins"', risk:true},
+    {cmd:'Disconnect-ADServer', risk:false}
+  ],
+  'network': [
+    {cmd:'ssh admin@core-switch-01', risk:false},
+    {cmd:'show running-config', risk:false},
+    {cmd:'configure terminal', risk:true},
+    {cmd:'write memory', risk:true},
+    {cmd:'exit', risk:false}
+  ],
+  'service': [
+    {cmd:'curl -X POST https://api.internal/deploy', risk:false},
+    {cmd:'kubectl rollout restart deployment/api', risk:false},
+    {cmd:'kubectl get pods -A', risk:false}
+  ]
+};
+
+const DEFAULT = {
+  vault: [], requests: [], sessions: [], audit: []
+};
+
+let S = JSON.parse(localStorage.getItem('pam_state')||'null') || JSON.parse(JSON.stringify(DEFAULT));
+
+if (S.vault.length===0) {
+  S.vault = [
+    {id:uid(), name:'prod-db-admin', system:'PostgreSQL Production', tier:'db-admin', checkedOut:false},
+    {id:uid(), name:'root-webserver-01', system:'Ubuntu Web Server', tier:'root', checkedOut:false},
+    {id:uid(), name:'da-corp', system:'Active Directory', tier:'domain-admin', checkedOut:false},
+    {id:uid(), name:'core-switch-admin', system:'Cisco Core Switch', tier:'network', checkedOut:false},
+    {id:uid(), name:'cicd-deploy-svc', system:'Kubernetes Cluster', tier:'service', checkedOut:false}
+  ];
+}
+
+if (S.sessions.length===0 && S.requests.length===0) {
+  // seed one completed session for replay demo
+  const acct = S.vault.find(v=>v.tier==='db-admin');
+  S.sessions.push({
+    id: uid(), user:'Mohamed Mohamud', accountId: acct.id, accountName: acct.name, system: acct.system,
+    tier: acct.tier, status:'completed', startedAt: new Date(Date.now()-3600000).toISOString(),
+    expiresAt: new Date(Date.now()-3000000).toISOString(),
+    commands: SAMPLE_COMMANDS['db-admin'], riskScore: 35
+  });
+  log('vault', 'System initialized with default vaulted accounts and a sample completed session');
+}
+save();
+
+function show(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+  const titles={dashboard:'Dashboard',vault:'Credential Vault',requests:'Access Requests',active:'Active Sessions',replay:'Session Replay',audit:'Audit Trail'};
+  document.getElementById('topbar-title').textContent = titles[id]||id;
+  render();
+}
+
+function timeLeft(expiresAt) {
+  const ms = new Date(expiresAt) - new Date();
+  if (ms <= 0) return 0;
+  return ms;
+}
+function fmtTime(ms) {
+  const totalSec = Math.floor(ms/1000);
+  const m = Math.floor(totalSec/60);
+  const s = totalSec%60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function calcRisk(tier, commands) {
+  const tierRisk = {root:40, 'domain-admin':35, 'db-admin':25, network:25, service:10};
+  const riskyCmds = (commands||[]).filter(c=>c.risk).length;
+  return Math.min(100, (tierRisk[tier]||20) + riskyCmds*15);
+}
+
+function riskColor(score) {
+  if (score >= 70) return 'var(--red)';
+  if (score >= 40) return 'var(--amber)';
+  return 'var(--teal)';
+}
+
+function render() {
+  expireOldSessions();
+  renderDash(); renderVault(); renderRequests(); renderActive(); renderReplay(); renderAudit();
+  document.getElementById('live-count').textContent = `${S.sessions.filter(s=>s.status==='active').length} Active Sessions`;
+}
+
+function expireOldSessions() {
+  let changed = false;
+  S.sessions.forEach(s => {
+    if (s.status === 'active' && timeLeft(s.expiresAt) <= 0) {
+      s.status = 'expired';
+      const acct = S.vault.find(v=>v.id===s.accountId);
+      if (acct) acct.checkedOut = false;
+      log('session', `Session expired: ${s.user} → ${s.accountName} (auto-revoked)`);
+      changed = true;
+    }
+  });
+  if (changed) save();
+}
+
+function renderDash() {
+  document.getElementById('s-vault').textContent = S.vault.length;
+  document.getElementById('s-checkedout').textContent = S.vault.filter(v=>v.checkedOut).length;
+  document.getElementById('s-pending').textContent = S.requests.filter(r=>r.status==='pending').length;
+  document.getElementById('s-highrisk').textContent = S.sessions.filter(s=>s.riskScore>=70).length;
+
+  const active = S.sessions.filter(s=>s.status==='active');
+  document.getElementById('dash-active').innerHTML = active.length
+    ? active.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(13,148,136,.07);">
+        <div><div style="font-size:.84rem;font-weight:600;">${s.user}</div><div style="font-size:.7rem;color:var(--muted);font-family:var(--font-m);">${s.accountName}</div></div>
+        <span class="badge b-amber">${fmtTime(timeLeft(s.expiresAt))}</span>
+      </div>`).join('')
+    : '<div class="empty">No active sessions.</div>';
+
+  const recent = S.audit.slice(0,6);
+  document.getElementById('dash-audit').innerHTML = recent.length
+    ? recent.map(e=>`<div style="padding:8px 0;border-bottom:1px solid rgba(13,148,136,.06);font-size:.78rem;">
+        <div>${e.msg}</div><div style="font-size:.66rem;color:var(--muted);font-family:var(--font-m);">${new Date(e.time).toLocaleString()}</div>
+      </div>`).join('')
+    : '<div class="empty">No events.</div>';
+}
+
+function renderVault() {
+  const grid = document.getElementById('vault-grid');
+  grid.innerHTML = S.vault.length ? S.vault.map(v=>{
+    const tierBadge = {'domain-admin':'b-red','db-admin':'b-amber','root':'b-red','service':'b-teal','network':'b-purple'};
+    return `<div class="vault-card ${v.checkedOut?'checked-out':''}">
+      <div class="v-name">${v.name}</div>
+      <div class="v-sys">${v.system}</div>
+      <span class="badge ${tierBadge[v.tier]||'b-teal'}">${v.tier}</span>
+      <div class="v-foot">
+        <span class="badge ${v.checkedOut?'b-amber':'b-green'}">${v.checkedOut?'Checked Out':'Available'}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteVaultAccount('${v.id}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">No accounts vaulted.</div>';
+
+  const sel = document.getElementById('r-account');
+  sel.innerHTML = S.vault.filter(v=>!v.checkedOut).length
+    ? S.vault.filter(v=>!v.checkedOut).map(v=>`<option value="${v.id}">${v.name} (${v.system})</option>`).join('')
+    : '<option value="">No available accounts</option>';
+}
+
+function renderRequests() {
+  const el = document.getElementById('requests-list');
+  const pending = S.requests.filter(r=>r.status==='pending');
+  el.innerHTML = pending.length ? pending.map(r=>`
+    <div class="req-card">
+      <div class="r-name">${r.requestor} → ${r.accountName}</div>
+      <div class="r-detail">Reason: ${r.reason}<br>Duration: ${r.duration} minutes</div>
+      <div class="r-foot">
+        <span class="badge b-amber">Pending Approval</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-teal btn-sm" onclick="approveRequest('${r.id}')">Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="denyRequest('${r.id}')">Deny</button>
+        </div>
+      </div>
+    </div>`).join('') : '<div class="empty">No pending requests.</div>';
+}
+
+function renderActive() {
+  const tbody = document.getElementById('active-body');
+  const active = S.sessions.filter(s=>s.status==='active');
+  tbody.innerHTML = active.length ? active.map(s=>{
+    const remaining = timeLeft(s.expiresAt);
+    const pct = Math.max(0, Math.min(100, (remaining/(s.totalDuration*60000))*100));
+    return `<tr>
+      <td>${s.user}</td>
+      <td style="font-family:var(--font-m);font-size:.78rem;">${s.accountName}</td>
+      <td style="color:var(--muted);">${s.system}</td>
+      <td>
+        <span style="font-family:var(--font-m);">${fmtTime(remaining)}</span>
+        <div class="timer-bar"><div class="timer-fill" style="width:${pct}%;"></div></div>
+      </td>
+      <td><span class="badge" style="background:rgba(0,0,0,.2);color:${riskColor(s.riskScore)};border:1px solid ${riskColor(s.riskScore)};">${s.riskScore}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="terminateSession('${s.id}')">⏹ Terminate</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="6" class="empty">No active sessions.</td></tr>';
+}
+
+function renderReplay() {
+  const sel = document.getElementById('replay-select');
+  const current = sel.value;
+  sel.innerHTML = S.sessions.length
+    ? S.sessions.map(s=>`<option value="${s.id}">${s.user} → ${s.accountName} (${s.status}) — ${new Date(s.startedAt).toLocaleString()}</option>`).join('')
+    : '<option value="">No sessions recorded</option>';
+  if (current) sel.value = current;
+
+  const sId = sel.value;
+  const session = S.sessions.find(s=>s.id===sId);
+  const output = document.getElementById('replay-output');
+  if (!session) { output.innerHTML = '<span style="color:var(--muted)">No session selected.</span>'; return; }
+
+  output.innerHTML = `<div style="color:var(--purple);margin-bottom:8px;">── Session: ${session.user} on ${session.accountName} (${session.system}) ──</div>` +
+    session.commands.map(c => `<div><span class="ts">[${new Date(session.startedAt).toLocaleTimeString()}]</span> <span class="cmd">$ ${c.cmd}</span>${c.risk ? ' <span class="risk">⚠ HIGH-RISK COMMAND</span>' : ''}</div>`).join('') +
+    `<div style="margin-top:8px;color:var(--muted);">── Session ${session.status} · Risk Score: ${session.riskScore}/100 ──</div>`;
+}
+
+function renderAudit() {
+  const el = document.getElementById('audit-list');
+  el.innerHTML = S.audit.length ? S.audit.map(e=>`
+    <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(13,148,136,.06);">
+      <div style="width:7px;height:7px;border-radius:50%;margin-top:5px;flex-shrink:0;background:${e.type==='session'?'var(--amber)':e.type==='vault'?'var(--teal)':e.type==='request'?'var(--purple)':'var(--green)'};"></div>
+      <div><div style="font-size:.82rem;">${e.msg}</div><div style="font-size:.67rem;color:var(--muted);font-family:var(--font-m);">${new Date(e.time).toLocaleString()}</div></div>
+    </div>`).join('') : '<div class="empty">No events.</div>';
+}
+
+function addVaultAccount() {
+  const name = document.getElementById('v-name').value.trim();
+  const system = document.getElementById('v-system').value.trim();
+  const tier = document.getElementById('v-tier').value;
+  if (!name||!system) { toast('Account name and system required.'); return; }
+  S.vault.push({id:uid(), name, system, tier, checkedOut:false});
+  log('vault', `Account vaulted: ${name} (${tier}) on ${system}`);
+  save(); render(); toast(`"${name}" added to vault.`);
+  document.getElementById('v-name').value=''; document.getElementById('v-system').value='';
+}
+
+function deleteVaultAccount(id) {
+  const v = S.vault.find(v=>v.id===id);
+  if (v && v.checkedOut) { toast('Cannot remove a checked-out account.'); return; }
+  S.vault = S.vault.filter(v=>v.id!==id);
+  log('vault', `Account removed from vault: ${v?.name}`);
+  save(); render(); toast('Removed from vault.');
+}
+
+function addRequest() {
+  const requestor = document.getElementById('r-requestor').value.trim();
+  const accountId = document.getElementById('r-account').value;
+  const reason = document.getElementById('r-reason').value.trim();
+  const duration = parseInt(document.getElementById('r-duration').value);
+  const acct = S.vault.find(v=>v.id===accountId);
+  if (!requestor || !acct || !reason) { toast('All fields required.'); return; }
+  S.requests.push({id:uid(), requestor, accountId, accountName:acct.name, reason, duration, status:'pending'});
+  log('request', `Access requested: ${requestor} → ${acct.name} (${duration}min) — "${reason}"`);
+  save(); render(); toast('Request submitted for approval.');
+  document.getElementById('r-requestor').value=''; document.getElementById('r-reason').value='';
+}
+
+function approveRequest(id) {
+  const req = S.requests.find(r=>r.id===id);
+  const acct = S.vault.find(v=>v.id===req.accountId);
+  if (!req || !acct) return;
+  if (acct.checkedOut) { toast('Account already checked out.'); return; }
+
+  req.status = 'approved';
+  acct.checkedOut = true;
+
+  const now = new Date();
+  const expires = new Date(now.getTime() + req.duration*60000);
+  const commands = SAMPLE_COMMANDS[acct.tier] || SAMPLE_COMMANDS['service'];
+  const riskScore = calcRisk(acct.tier, commands);
+
+  S.sessions.push({
+    id: uid(), user: req.requestor, accountId: acct.id, accountName: acct.name,
+    system: acct.system, tier: acct.tier, status: 'active',
+    startedAt: now.toISOString(), expiresAt: expires.toISOString(),
+    totalDuration: req.duration, commands, riskScore
+  });
+
+  log('session', `Access GRANTED: ${req.requestor} → ${acct.name} for ${req.duration} minutes (JIT, expires ${expires.toLocaleTimeString()})`);
+  save(); render(); toast(`Approved. Session active for ${req.duration} minutes.`);
+}
+
+function denyRequest(id) {
+  const req = S.requests.find(r=>r.id===id);
+  req.status = 'denied';
+  log('request', `Access request DENIED: ${req.requestor} → ${req.accountName}`);
+  save(); render(); toast('Request denied.');
+}
+
+function terminateSession(id) {
+  const s = S.sessions.find(s=>s.id===id);
+  if (!s) return;
+  s.status = 'terminated';
+  const acct = S.vault.find(v=>v.id===s.accountId);
+  if (acct) acct.checkedOut = false;
+  log('session', `Session manually terminated: ${s.user} → ${s.accountName} (kill switch activated)`);
+  save(); render(); toast('Session terminated.');
+}
+
+function clearAudit() {
+  if (!confirm('Clear all audit logs?')) return;
+  S.audit = [];
+  save(); render(); toast('Audit log cleared.');
+}
+
+// Live countdown tick
+setInterval(() => {
+  if (document.getElementById('panel-active').classList.contains('active') ||
+      document.getElementById('panel-dashboard').classList.contains('active')) {
+    render();
+  }
+}, 1000);
+
+render();
+</script>
+
+<script src="https://analytics.kulaninstitute.org/tracker.js" data-site="pam-system" data-group="kulan-group"></script>
+</body>
+</html>
